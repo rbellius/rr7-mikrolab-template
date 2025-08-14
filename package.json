@@ -1,0 +1,40 @@
+{
+  "name": "-rr7--mikrolab-template",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "react-router dev",
+    "start": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc",
+
+    "helmfile-apply": "docker compose up helmfile",
+
+    "cluster-install": "curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.8.3 bash",
+    "cluster-build": "k3d cluster create --config mikrolab/k3d-config.yaml && k3d kubeconfig get local-cluster > mikrolab/kubeconfig.yaml",
+    "cluster-destroy": "k3d cluster delete --config mikrolab/k3d-config.yaml",
+    "cluster-rebuild": "npm run cluster-destroy && npm run cluster-build",
+    "cluster-rebuild-argo": "npm run cluster-rebuild && sleep 10; kubectl create namespace argocd --kubeconfig mikrolab/kubeconfig.yaml && kubectl apply -n argocd --kubeconfig mikrolab/kubeconfig.yaml -f https://raw.githubusercontent.com/argoproj/argo-cd/refs/heads/master/manifests/core-install.yaml --wait",
+    "cluster-rebuild-apply": "npm run cluster-rebuild && sleep 10; npm run helmfile-apply",
+    "cluster-bootstrap": "npm run cluster-install && npm run cluster-rebuild-apply"
+  },
+  "dependencies": {
+    "@react-router/node": "^7.7.1",
+    "@react-router/serve": "^7.7.1",
+    "isbot": "^5.1.27",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router": "^7.7.1"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^7.7.1",
+    "@tailwindcss/vite": "^4.1.4",
+    "@types/node": "^20",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.3",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}

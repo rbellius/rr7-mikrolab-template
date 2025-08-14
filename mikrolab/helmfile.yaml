@@ -1,0 +1,176 @@
+repositories:
+
+# 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
+    - name: rbel-charts
+      url: https://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@raw.githubusercontent.com/rbellius/charts/main
+    - name: argo
+      url: https://argoproj.github.io/argo-helm
+
+
+releases:
+  - name: kro
+    namespace: kro
+    createNamespace: true
+    chart: oci://ghcr.io/kro-run/kro/kro
+    version: 0.4.0
+    wait: true
+    suppressDiff: true
+    # installed: true
+    labels:
+      group: core
+  
+    values:
+      - crds:
+          enabled: true
+          keep: false
+    hooks:
+    - events: ["cleanup"]
+      showlogs: true
+      command: sh
+      args:
+        - -c
+        - |
+          echo "Waiting for ResourceGraphDefinitions CRD to be Ready..."
+
+    - events: ["cleanup"]
+      showlogs: true
+      command: sh
+      args:
+        - -c
+        - |
+          kubectl --kubeconfig .kube/kubeconfig.yaml wait --for=condition=Established --timeout=-1s crd/resourcegraphdefinitions.kro.run
+          echo "ResourceGraphDefinitions CRD is Ready!"
+          sleep 5
+
+  
+  - name: argocd
+    namespace: argocd
+    createNamespace: true
+    chart: argo/argo-cd
+    version: 8.0.0
+    wait: true
+    suppressDiff: true
+    labels:
+      group: core
+    values:
+          
+      - crds:
+          create: true
+          keep: true
+      
+        configs:
+          cm:
+            timeout.reconciliation: 15s
+          params:
+            server.insecure: true
+          server:
+            ingress:
+              enabled: false
+        dex:
+          enabled: false
+  
+    hooks:
+    - events: ["cleanup"]
+      showlogs: true
+      command: sh
+      args:
+        - -c
+        - |
+          echo "Waiting for ArgoCD Applications to be Ready..."
+          # sleep 10;
+
+    - events: ["cleanup"]
+      showlogs: true
+      command: sh
+      args:
+        - -c
+        - |
+          kubectl --kubeconfig .kube/kubeconfig.yaml wait --for=condition=Established --timeout=-1s crds application.argoproj.io applicationset.argoproj.io
+          echo "Application CRD is Ready!"
+    
+
+  - name: mikrolab-appset 
+    namespace: argocd
+    createNamespace: true
+    chart: rbel-charts/mikrolab-appset
+    # chart: ./charts/init
+    version: 0.1.1
+    wait: true
+    suppressDiff: true
+    disableValidationOnInstall: true
+    # disableValidation: true
+    labels:
+      group: mikrolab
+    needs:
+      - argocd/argocd
+      - kro/kro
+
+    hooks:
+
+    - events: ["cleanup"]
+      showlogs: true
+      command: sh
+      args:
+        - -c
+        - |
+          echo "Waiting for all Applications to be Healthy..."
+    - events: ["cleanup"]
+      showlogs: true
+      command: sh
+      args:
+        - -c
+        - |
+          # sleep 10;
+          kubectl --kubeconfig .kube/kubeconfig.yaml wait --for=jsonpath='{.status.health.status}'=Healthy application --all -A --timeout=-1s
+          kubectl --kubeconfig .kube/kubeconfig.yaml wait --for=condition=Established --timeout=-1s crd/applicationsets.argoproj.io crd/resourcegraphdefinitions.kro.run
+    - events: ["cleanup"]
+      showlogs: true
+      command: sh
+      args:
+        - -c
+        - |
+          echo "Waiting for all ResourceGraphDefinitions to be Healthy..."
+    - events: ["cleanup"]
+      showlogs: true
+      command: sh
+      args:
+        - -c
+        - |
+          # sleep 10;
+          # kubectl wait --for=condition=Established --timeout=120s rgd/certmanagerbundles.kro.run
+          kubectl --kubeconfig .kube/kubeconfig.yaml wait --for=condition=Ready --timeout=-1s rgd -A --all
+          echo "All ResourceGraphDefinitions are Ready!"
+
+
+  - name: mirkrolab-release
+    namespace: mikrolab
+    createNamespace: true
+    chart: ./charts/mikrolab
+    version: 0.1.0
+    wait: true
+    suppressDiff: true
+    disableValidationOnInstall: true
+    disableValidation: true
+    needs:
+      - kro/kro
+      - argocd/argocd
+      - argocd/mikrolab-appset
+      
+    hooks:
+    - events: ["presync"]
+      showlogs: true
+      command: echo
+      args: 
+        - "Waiting for ArgoCD and Kro to be Ready..."
+
+    - events: ["presync"]
+      showlogs: true
+      command: sh
+      args:
+        - -c
+        - |
+          sleep 10;
+          echo "Waiting for Stacks CRD to be Ready..."
+          kubectl --kubeconfig .kube/kubeconfig.yaml wait --for=condition=Established --timeout=-1s crds mikrolabs.kro.run  webapplications.kro.run
+
+

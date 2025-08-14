@@ -1,0 +1,76 @@
+apiVersion: k3d.io/v1alpha5 
+kind: Simple
+metadata:
+  name: local-cluster
+
+servers: 1
+agents: 0
+
+ports:
+  - port: 80:80
+    nodeFilters:
+      - 'server:*'
+
+
+  - port: 443:443
+    nodeFilters:
+      - 'server:*'
+
+options:
+  k3d:
+    wait: true
+
+  # k3s:
+  #   extraArgs: # additional arguments passed to the `k3s server|agent` command; same as `--k3s-arg`
+  #   - arg: --disable-helm-controller
+  #     nodeFilters:
+  #       - server:*
+
+
+
+
+# # You can now use the registry like this (example):
+# # 1. create a new cluster that uses this registry
+# k3d cluster create --registry-use k3d-k3d-rebl-io:38345
+
+# # 2. tag an existing local image to be pushed to the registry
+# docker tag nginx:latest k3d-k3d-rebl-io:38345/mynginx:v0.1
+
+# # 3. push that image to the registry
+# docker push k3d-k3d-rebl-io:38345/mynginx:v0.1
+
+# # 4. run a pod that uses this image
+# kubectl run mynginx --image k3d-k3d-rebl-io:38345/mynginx:v0.1
+
+# https://github.com/ligfx/k3d-registry-dockerd
+registries:
+  create:
+    image: ligfx/k3d-registry-dockerd:latest
+    name: k3d-rebl-io
+    proxy:
+      remoteURL: "*"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+
+
+files:
+  - description: 'rbel-repo'
+    destination: k3s-manifests-custom/rbel-repo.yaml
+    source: .secrets/rebl-repo.yaml
+    nodeFilters:
+      - 'server:*'
+
+  - description: 'ducksdns-secret'
+    destination: k3s-manifests-custom/duckdns-secret.yaml
+    source: .secrets/duckdns-secret.yaml
+    nodeFilters:
+      - 'server:*'
+
+  - description: 'cloudflare-secret'
+    destination: k3s-manifests-custom/cloudflare-secret.yaml
+    source: .secrets/cloudflare-secret.yaml
+    nodeFilters:
+      - 'server:*'
+
+

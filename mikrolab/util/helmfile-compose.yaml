@@ -1,0 +1,13 @@
+  
+  services:
+  helmfile: &helmfile
+    container_name: helmfile
+    image: ghcr.io/helmfile/helmfile:v1.1.3
+    network_mode: host
+    working_dir: /deploy
+    entrypoint: ["helmfile", "--log-level", "info", "--kubeconfig", ".kube/kubeconfig.yaml", "apply"] 
+    command: ["--include-transitive-needs", "apply", "--wait"]
+    volumes:
+      - ./
+      - ./helmfile.yaml:/deploy/helmfile.yaml
+      - ./charts:/deploy/charts
