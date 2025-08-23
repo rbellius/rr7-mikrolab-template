@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mikrolab
+  labels:
+    app.kubernetes.io/name: mikrolab
+    app.kubernetes.io/instance: mikrolab
+    app.kubernetes.io/component: mikrolab
+    app.kubernetes.io/part-of: mikrolab
+    app.kubernetes.io/managed-by: argocd
+
+---
+
+apiVersion: kro.run/v1alpha1
+kind: MikroLab
+metadata:
+  name: mikrolab-config
+  namespace: mikrolab
+  annotations:
+    argocd.argoproj.io/instance: mikrolab
+spec:
+
+  env: staging
+
+  certmanager:
+    enabled: true
+    provider: duckdns
+    domain: mikrolab.duckdns.org 
+    email: eddie.moya@gmail.com
+
+  # config: 
+  #   kubeconfig: .kube/kubeconfig.yaml

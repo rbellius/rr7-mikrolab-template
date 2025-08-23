@@ -1,0 +1,146 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: argofile-applicationset-rgd
+  labels:
+    app.kubernetes.io/name: mikrolab-applicationset
+    app.kubernetes.io/instance: mikrolab-applicationset
+    app.kubernetes.io/component: applicationset
+    app.kubernetes.io/part-of: mikrolab
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: Argofile
+
+    types:
+      Parameter:
+        name: string | required=true
+        value: string | required=true
+
+      Application:
+        enabled: boolean | default=false required=true
+
+        name: string | required=true
+        project: string | default="default"
+
+        selfHeal: boolean | default=true
+        syncWave: integer | default=0
+        hook: string | default="Sync"
+
+        sync:
+          createNamespace: boolean | default=true
+          applyOutOfSyncOnly: boolean | default=false
+          replace: boolean | default=false
+          validate: boolean | default=true
+          pruneLast: boolean | default=true
+          respectIgnoreDifferences: boolean | default=true
+          skipDryRunOnMissingResources: boolean | default=false
+          prunePropagationPolicy: string | default="foreground" enum="foreground,background,orphan"
+  
+
+        destination:
+          server: string | default="https://kubernetes.default.svc"
+          namespace: string | default="" required=true
+
+        source:
+          repoURL: string | required=true
+          targetRevision: string | default="main" required=true
+          path: string | default=""
+          chart: string | default=""
+          values: string | default=""
+          # parameters: '[string]string[str]string'
+
+          # To match multiple patterns, wrap the patterns in {} and separate them with commas. For example: '{*.yml,*.yaml}'
+          directory:
+            recurse: boolean | default=false required=false
+            exclude: string | required=false
+            include: string | required=false
+      
+
+        
+    spec:
+    
+      applications: '[]Application | required=true'
+
+      goTemplate: boolean | default=false
+      goTemplateOptions: string | default="missingkey=error"
+
+      syncPolicy:
+        applicationsSync: string | default="create-only" enum="create-only,create-update,create-delete"
+        preserveResourcesOnDelete: boolean | default=false
+
+  resources:
+      - id: argocdApplicationSet
+        template:
+          apiVersion: argoproj.io/v1alpha1
+          kind: ApplicationSet
+          metadata:
+            name: '${schema.metadata.name}-applicationset-kro'
+            namespace: argocd
+          spec: 
+
+            goTemplate: true
+            goTemplateOptions: ["${ schema.spec.goTemplateOptions }"]
+            generators:
+
+            - list:
+                elements:
+                  ${ schema.spec.applications }
+                  
+
+              selector:
+                matchExpressions:
+                  - key: enabled
+                    operator: In
+                    values:
+                      - "true"
+
+            syncPolicy:
+              applicationsSync: '${ schema.spec.syncPolicy.applicationsSync }'
+              # preserveResourcesOnDelete: ${ schema.spec.syncPolicy.preserveResourcesOnDelete }
+
+            template:
+     
+              metadata:
+                name:                           '{{`{{ .name }}`}}'
+                namespace:                      argocd
+                
+                annotations:
+                  argocd.argoproj.io/sync-wave: '{{`{{ .syncWave }}`}}'
+                  argocd.argoproj.io/hook:      '{{`{{ .hook }}`}}'
+                finalizers:
+                - resources-finalizer.argocd.argoproj.io/foreground
+                
+                labels:
+                  # app.kubernetes.io/part-of:    mikrolab
+              spec:
+
+                project:                        '{{`{{ .project }}`}}'
+
+                syncPolicy:
+                  automated:
+                    selfHeal: true
+                    
+                  syncOptions:
+                    - CreateNamespace={{`{{ .sync.createNamespace }}`}}
+                    - ApplyOutOfSyncOnly={{`{{ .sync.applyOutOfSyncOnly }}`}}
+                    - Replace={{`{{ .sync.replace }}`}}
+                    - Validate={{`{{ .sync.validate }}`}}
+
+                destination:
+                  server:                       '{{`{{ .destination.server }}`}}'
+                  namespace:                    '{{`{{ .destination.namespace | default .name }}`}}'
+
+                source:
+                    repoURL:                    '{{`{{ .source.repoURL }}`}}'
+                    targetRevision:             '{{`{{ .source.targetRevision }}`}}'
+
+
+            templatePatch: | 
+              spec:
+                source:
+
+                {{`{{- if .source.chart }}`}}
+                  chart: {{`{{ .source.chart }}`}}
+                {{`{{- end }}`}}
+

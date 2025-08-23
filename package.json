@@ -9,13 +9,14 @@
     "typecheck": "react-router typegen && tsc",
 
     "helmfile-apply": "docker compose up helmfile",
+    "helmfile": "docker compose run --rm helmfile",
 
     "cluster-install": "curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.8.3 bash",
     "cluster-build": "k3d cluster create --config mikrolab/k3d-config.yaml && k3d kubeconfig get local-cluster > mikrolab/kubeconfig.yaml",
     "cluster-destroy": "k3d cluster delete --config mikrolab/k3d-config.yaml",
     "cluster-rebuild": "npm run cluster-destroy && npm run cluster-build",
     "cluster-rebuild-argo": "npm run cluster-rebuild && sleep 10; kubectl create namespace argocd --kubeconfig mikrolab/kubeconfig.yaml && kubectl apply -n argocd --kubeconfig mikrolab/kubeconfig.yaml -f https://raw.githubusercontent.com/argoproj/argo-cd/refs/heads/master/manifests/core-install.yaml --wait",
-    "cluster-rebuild-apply": "npm run cluster-rebuild && sleep 10; npm run helmfile-apply",
+    "cluster-rebuild-helmfile": "npm run cluster-rebuild && sleep 5; npm run helmfile",
     "cluster-bootstrap": "npm run cluster-install && npm run cluster-rebuild-apply"
   },
   "dependencies": {

@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mikrolab-rgd-application-local
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+    argocd.argoproj.io/hook: PreSync
+
+    
+  finalizers:
+    # The default behaviour is foreground cascading deletion
+    # - resources-finalizer.argocd.argoproj.io
+    # Alternatively, you can use background cascading deletion
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: default
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+      allowEmpty: true
+  
+    syncOptions:
+      - CreateNamespace=true
+      - Replace=true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mikrolab
+
+  source:
+    repoURL: git@github.com:rbellius/resourcegraphdefinitions.git
+    targetRevision: main
+    path: rgds/mikrolab-rgd

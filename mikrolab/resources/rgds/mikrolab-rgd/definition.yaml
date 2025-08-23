@@ -1,0 +1,218 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: mikrolab
+  namespace: mikrolab
+  annotations:
+    argocd.argoproj.io/instance: mikrolab
+  labels:
+    app.kubernetes.io/name: mikrolab
+    app.kubernetes.io/instance: mikrolab
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: mikrolab
+    # app.kubernetes.io/managed-by: argocd ## will this be tracked my argocd?
+
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: MikroLab
+    spec:
+   
+      env: string | default="staging" enum="staging,production"
+
+      ingress:
+        class: string | default="traefik" enum="traefik"
+ 
+      certmanager:
+        enabled: boolean | default=true
+        provider: string | default="duckdns" enum="duckdns,cloudflare"
+        domain: string  
+        email: string
+
+  
+    # status:
+
+      # certmanager:
+      #   resources: ${certManagerRGDApplication.status.operationState.syncResult.resources}
+      #   healthy: ${certManagerRGDApplication.status.health.status}
+      #   synced: ${certManagerRGDApplication.status.sync.status}  
+
+  resources:
+
+    - id: createNamespace
+      template:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: cert-manager
+
+
+    - id: certManagerBundle
+      includeWhen:
+        - ${schema.spec.certmanager.enabled}
+      template:
+          apiVersion: kro.run/v1alpha1
+          kind: CertManagerBundle
+          metadata:
+            name: cert-manager-bundle
+            namespace: cert-manager
+            annotations:
+              argocd.argoproj.io/instance: cert-manager-bundle
+          spec:
+            env: ${schema.spec.env}
+            ingress:
+              requests: true
+            dns:
+              providers: 
+                duckdns:
+                  enabled: ${schema.spec.certmanager.provider == "duckdns"}
+                  email: ${schema.spec.certmanager.email} 
+                  domain: ${schema.spec.certmanager.domain}
+                  dynamic: true
+                # cloudflare:
+                #   enabled: false
+                #   email: eddie.moya@gmail.com
+                #   domain: cloudbreaker.me
+                builtin:
+                  enabled: ${schema.spec.certmanager.provider == "cloudflare"}
+                  provider: cloudflare
+                  email: ${schema.spec.certmanager.email}
+                  domain: ${schema.spec.certmanager.domain}
+                default:
+                  provider: ${schema.spec.certmanager.provider}
+                  domain: ${schema.spec.certmanager.domain}
+
+  
+    # - id: certManagerApplication
+    #   readyWhen:
+    #     # - ${certManagerRGD.status.sync.statu/"}
+    #     - ${certManagerApplication.status.health.status == "Healthy"}
+    #   template:
+    #       apiVersion: argoproj.io/v1alpha1
+    #       kind: Application
+    #       metadata:
+    #         name: cert-manager
+    #         namespace: argocd
+    #         annotations:
+    #           argocd.argoproj.io/instance: cert-manager-bundle
+    #           # argocd.argoproj.io/hook: PreSync
+    #           # argocd.argoproj.io/sync-wave: "-10"              
+    
+    #         finalizers:
+    #           - resources-finalizer.argocd.argoproj.io/foreground
+
+    #       spec:
+    #         project: default
+    #         syncPolicy:
+    #           automated:
+    #             selfHeal: true
+            
+    #           syncOptions:
+    #             - CreateNamespace=true
+    #             # - ApplyOutOfSyncOnly=true
+
+    #         destination:
+    #           server: https://kubernetes.default.svc
+    #           namespace: cert-manager
+
+    #         source:
+    #           repoURL: https://charts.jetstack.io
+    #           chart: cert-manager  
+    #           targetRevision: 1.17.2
+    #           helm:
+    #             valuesObject:
+    #               crds:
+    #                 enabled: true
+    #                 keep: false
+                    
+    #               enableCertificateOwnerRef: true
+    #               extraArgs:
+    #                 - --dns01-recursive-nameservers-only
+    #                 - --dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53
+
+    # - id: certManagerRGDApplication
+    #   readyWhen:
+    #     - ${certManagerRGDApplication.status.health.status == "Healthy"}
+    #   template:
+    #     apiVersion: argoproj.io/v1alpha1
+    #     kind: Application
+    #     metadata:
+    #       name: cert-manager-rgd-application
+    #       namespace: argocd
+    #       annotations:
+    #         # argocd.argoproj.io/sync-wave: ""
+    #         argocd.argoproj.io/hook: PreSync
+
+            
+    #       finalizers:
+    #         # The default behaviour is foreground cascading deletion
+    #         # - resources-finalizer.argocd.argoproj.io
+    #         # Alternatively, you can use background cascading deletion
+    #         - resources-finalizer.argocd.argoproj.io/background
+
+    #     spec:
+    #       project: default
+
+    #       syncPolicy:
+    #         automated:
+    #           selfHeal: true
+    #           prune: true
+    #           # allowEmpty: true
+          
+    #         syncOptions:
+    #           - CreateNamespace=true
+    #           - Replace=true
+
+    #       destination:
+    #         server: https://kubernetes.default.svc
+    #         namespace: cert-manager
+
+    #       source:
+    #         repoURL: git@github.com:rbellius/resourcegraphdefinitions.git
+    #         path: rgds/cert-manager-bundle-rgd
+    #         targetRevision: main
+
+
+
+ 
+  # - id: argocdIngressRequest
+  #   template:
+  #       apiVersion: kro.run/v1alpha1
+  #       kind: IngressRequest
+  #       metadata:
+  #         name: argocd
+  #         namespace: argocd
+  #         annotations:
+  #           argocd.argoproj.io/instance: argocd-ingress          
+
+  #       spec:
+
+  #         env: ${schema.spec.env}
+  #         subdomain: argocdtest
+  #         service:
+  #           name: argocd-server
+
+    
+
+
+    # - id: SomeChartArgofile
+    #   template:
+    #     apiVersion: kro.run/v1alpha1
+    #     kind: Argofile
+    #     metadata:
+    #       name: chart-name-argofile
+    #     spec:
+    #       applications:
+    #         - name: chart-name
+    #           enabled: true  
+    #           hook: PreSync
+    #           syncWave: 0
+    #           destination:
+    #             namespace: your-namespace
+    #           source:
+    #             repoURL: git@github.com:user/repo.git
+    #             targetRevision: main
+    #             path: path/to/yaml # Use chart: for actual helm charts
+    #           values: | 
+    #             foo:
+    #               bar: true

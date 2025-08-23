@@ -1,0 +1,234 @@
+apiVersion: kro.run/v1alpha1
+kind: CertManagerBundle
+metadata:
+  name: cert-manager-bundle
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/instance: cert-manager-bundle
+spec:
+
+  env: staging
+
+  ingress:
+    requests: true
+
+  dns:
+    providers: 
+      duckdns:
+        enabled: true
+        email: eddie.moya@gmail.com 
+        domain: mikrolab.duckdns.org
+        dynamic: true
+      # cloudflare:
+      #   enabled: false
+      #   email: eddie.moya@gmail.com
+      #   domain: cloudbreaker.me
+      builtin:
+        enabled: false
+        provider: cloudflare
+        email: eddie.moya@gmail.com
+        domain: cloudbreaker.me
+      default:
+        provider: duckdns
+        domain: mikrolab.duckdns.org
+
+
+
+        # ${clustreIssuerCrd.status.conditions.exists(x, x.type == 'Established' && x.status == "True")}
+
+      # - id: clusterIssuerCrd
+      #   readyWhen:
+      #     - ${certmanagerApp.status.state == "ACTIVE" && clusterIssuerCrds.status.conditions.exists(x, x.type == 'Established' && x.status == "True")} # Ensure cert-manager is ready before deploying the issuer  
+      #   template:
+      #     apiVersion: apiextensions.k8s.io/v1
+      #     kind: CustomResourceDefinition
+      #     metadata:
+      #       name: clusterissuers.cert-manager.io
+
+
+      # - id: certManagerBuiltInIssuer
+      #   includeWhen:
+      #     - ${certmanagerApp.status.state == "ACTIVE" && clusterIssuerCrds.status.conditions.exists(x, x.type == 'Established' && x.status == "True")} ## Ensure cert-manager is ready before deploying the issuer
+      #   # includeWhen:
+      #     # - ${schema.spec.tls.providers.builtin.enabled} # Only include if the user wants to use Cloudflare
+      #   template:
+      #     apiVersion: cert-manager.io/v1
+      #     kind: ${clusterIsssuerCrd.kind}
+
+      #     metadata:
+      #       name: ${schema.spec.tls.providers.builtin.provider}-letsencrypt-${schema.spec.env}
+      #       annotations:
+      #         # argocd.argoproj.io/hook: PostSync
+      #         # argocd.argoproj.io/sync-wave: "10"
+      #         argocd.argoproj.io/instance: cert-manager-${schema.spec.tls.providers.builtin.provider}
+      #         rbellius.com/cert-manager-condition: ${certmanagerApp.status.?state}
+      #       finalizers:
+      #         - resources-finalizer.argocd.argoproj.io/foreground
+
+      #       labels:
+      #         app.kubernetes.io/instance: 'cert-manager'
+      #         app.kubernetes.io/component: '${schema.spec.tls.providers.builtin.provider}-issuer-${schema.spec.env}'
+      #         app.kubernetes.io/name: cert-manager-${schema.spec.tls.providers.builtin.provider}-issuer-${schema.spec.env}
+      #         app.kubernetes.io/part-of: cert-manager
+      #     spec:
+      #       acme:
+
+      #         # Email address used for ACME registration
+      #         email: ${schema.spec.tls.providers.builtin.email}
+
+      #         # Let's Encrypt Staging
+      #         server: https://acme-staging-v02.api.letsencrypt.org/directory
+
+      #         # Let's Encrypt Production
+      #         # server: https://acme-v02.api.letsencrypt.org/directory
+
+
+      #         privateKeySecretRef:
+      #           name: issuer-account-key
+
+      #         solvers:
+
+      #         # DNS01 challenge
+      #         - dns01:
+
+      #             # Cloudflare DNS01 challenge provider
+      #             # ${schema.spec.tls.providers.builtin.provider}:
+      #             cloudflare:
+
+      #               # Cloudflare acccount email
+      #               email: ${schema.spec.tls.providers.builtin.email}
+
+      #               # Cloudflare Orgin CA API Token
+      #               apiKeySecretRef:
+      #                 name: '${schema.spec.tls.providers.builtin.provider}-api-key-secret'
+      #                 key: '${schema.spec.tls.providers.builtin.provider}'
+      #           selector:
+      #             dnsZones:
+      #             - '${schema.spec.tls.providers.builtin.domain}'
+
+
+
+
+      # - id: ingressRequestDefinition
+      #   template:
+      #     apiVersion: kro.run/v1alpha1
+      #     kind: ResourceGraphDefinition
+      #     metadata:
+      #       name: ingress-request-definition
+      #       annotations:
+      #         argocd.argoproj.io/instance: ingress-request-definition
+      #       labels:
+      #         app.kubernetes.io/name: ingress-request
+      #         app.kubernetes.io/instance: ingress-request
+      #         app.kubernetes.io/component: rgd
+      #         app.kubernetes.io/part-of: mikrolab
+      #         app.kubernetes.io/managed-by: argocd ## will this be tracked my argocd?
+      #     spec:
+      #       schema:
+      #         apiVersion: v1alpha1
+      #         kind: IngressRequest
+      #         spec:
+            
+      #           env: string | default="staging" enum="staging,production"
+      #           subdomain: string
+
+      #           service:
+      #             name: string
+      #             port: integer | default=80
+
+      #         # status:
+      #         #   ingressConfigAvailable: ${ingressConfig.status.conditions}
+
+
+      #       resources:
+      #         - id: ingressConfig
+      #           externalRef:
+      #             apiVersion: v1
+      #             kind: ConfigMap
+      #             metadata:
+      #               name: ingress-request-configmap
+      #               namespace: cert-manager
+
+
+      #         - id: ingressGenerator
+      #           template:
+      #             apiVersion: networking.k8s.io/v1
+      #             kind: Ingress
+      #             metadata:
+      #               name: ${schema.metadata.name}
+      #               namespace: ${schema.metadata.namespace}
+      #               annotations:
+      #                 cert-manager.io/cluster-issuer: ${ingressConfig.data.?clusterIssuer}
+      #                 argocd.argoproj.io/instance: ${schema.metadata.name}-${schema.metadata.namespace}-ingress-request
+      #               # finalizers:
+      #               #   - resources-finalizer.argocd.argoproj.io
+                      
+      #               labels:
+      #                 app.kubernetes.io/instance: ${schema.metadata.name}
+      #                 app.kubernetes.io/name: ingress
+      #                 app.kubernetes.io/component: ingress
+      #                 app.kubernetes.io/part-of: ${schema.metadata.namespace}
+      #                 # app.kubernetes.io/managed-by: kro
+
+
+      #             spec: 
+      #               # ingressClassName: ${certManagerBundle.spec.ingress.class}
+      #               ingressClassName: ${ingressConfig.data.?ingressClass}
+
+                
+      #               tls:
+      #               - secretName: ${schema.metadata.name}-${schema.spec.env}-tls
+      #                 hosts:
+      #                   - '${schema.spec.subdomain}.${ingressConfig.data.?domain}'
+
+      #               rules:
+      #               - host: '${schema.spec.subdomain}.${ingressConfig.data.?domain}'
+      #                 http:
+      #                   paths:
+      #                   - path: /
+      #                     pathType: Prefix
+      #                     backend:
+      #                       service:
+      #                         name: ${schema.spec.service.name}
+      #                         port:
+      #                           number: ${schema.spec.service.port}
+## create optional "install" specs that add the applications for certain dependanies. ingress.install: true   | maybe ingressRequest.install:class
+    
+      # - id: ingressRequest
+      #   includeWhen:
+      #     - ${schema.spec.ingress.requests}
+      #   template:
+      #     apiVersion: argoproj.io/v1alpha1
+      #     kind: Application
+      #     metadata:
+      #       name: ingress-request
+      #       namespace: argocd
+      #       annotations:
+      #         argocd.argoproj.io/instance: cert-manager-bundle
+              
+      #       finalizers:
+      #         - resources-finalizer.argocd.argoproj.io
+
+      #     spec:
+      #       project: default
+
+      #       syncPolicy:
+      #         automated:
+      #           selfHeal: true
+      #           prune: true
+      #           allowEmpty: true
+            
+      #         syncOptions:
+      #           - CreateNamespace=true
+      #           # - ApplyOutOfSyncOnly=true
+
+      #       destination:
+      #         server: https://kubernetes.default.svc
+      #         namespace: cert-manager
+
+      #       source:
+      #         repoURL: git@github.com:rbellius/resourcegraphdefinitions.git
+      #         path: ingress-request-rgd
+      #         targetRevision: main
+      #         # helm:
+              #   valuesObject:

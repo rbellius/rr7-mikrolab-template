@@ -1,0 +1,129 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kro
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+    argocd.argoproj.io/hook: PreSync
+    
+  finalizers:
+    # The default behaviour is foreground cascading deletion
+    # - resources-finalizer.argocd.argoproj.io
+    # Alternatively, you can use background cascading deletion
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: default
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+      # allowEmpty: 
+  
+    syncOptions:
+      - CreateNamespace=true
+      # - ApplyOutOfSyncOnly=true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kro
+
+  source:
+    repoURL: https://github.com/rbellius/kro.git
+    path: helm  
+    targetRevision: main
+    helm:
+      values: |
+        crds:
+          enabled: true
+          keep: false
+
+# ---
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: kro-networkstack-definition
+#   namespace: argocd
+#   annotations:
+#     argocd.argoproj.io/sync-wave: "-8"
+    
+#   finalizers:
+#     # The default behaviour is foreground cascading deletion
+#     # - resources-finalizer.argocd.argoproj.io
+#     # Alternatively, you can use background cascading deletion
+#     - resources-finalizer.argocd.argoproj.io/background
+
+# spec:
+#   project: default
+
+#   syncPolicy:
+#     automated:
+#       selfHeal: true
+#       prune: true
+#       allowEmpty: true
+  
+#     syncOptions:
+#       - CreateNamespace=true
+#       # - ApplyOutOfSyncOnly=true
+
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: kro
+
+#   source:
+#     repoURL: https://github.com/rbellius/rgd-networkstack.git
+  
+#     path: helm  
+#     targetRevision: main
+     
+
+      # - id: argocdApplication
+      #   # includeWhen:
+      #   #   - '${schema.spec.appType == "Application"}'
+      #   # readyWhen:
+      #   #   - '${argocdApplication.status.health.status == "Healthy"}'
+      #   #   - '${argocdApplication.status.sync.status == "Synced"}'
+      #   template:
+      #       apiVersion: argoproj.io/v1alpha1
+      #       kind: Application
+      #       metadata:
+      #         name: '${schema.metadata.name}-application'
+      #         namespace: argocd
+      #         # annotations: 
+      #         #   argocd.argoproj.io/instance: '${schema.metadata.name}'
+      #         #   argocd.argoproj.io/hook: '${schema.spec.application.hook}'
+      #         #   argocd.argoproj.io/sync-wave: '${schema.spec.application.syncWave}'        
+      
+      #         finalizers:
+      #           - resources-finalizer.argocd.argoproj.io/foreground
+
+      #       spec:
+      #         project: ${schema.spec.application.project}
+
+      #         syncPolicy:
+      #           automated:
+      #             selfHeal: ${schema.spec.application.selfHeal}
+      #             prune: true
+      #             allowEmpty: true
+              
+      #           syncOptions:
+      #             - CreateNamespace=${schema.spec.application.sync.createNamespace}
+      #             - ApplyOutOfSyncOnly=${schema.spec.application.sync.applyOutOfSyncOnly}
+      #             - Replace=${schema.spec.application.sync.replace}
+      #             - Validate=${schema.spec.application.sync.validate}
+
+      #         destination:
+      #           server: ${schema.spec.application.destination.server}
+      #           namespace: ${schema.spec.application.destination.namespace}
+
+      #         source:
+      #           repoURL: ${schema.spec.application.source.repoURL}
+      #           chart: ${schema.spec.application.source.chart}
+      #           path: ${schema.spec.application.source.path}
+      #           targetRevision: ${schema.spec.application.source.targetRevision}
+      #           helm:
+      #             values: |
+      #               ${ schema.spec.application.source.values }
+    

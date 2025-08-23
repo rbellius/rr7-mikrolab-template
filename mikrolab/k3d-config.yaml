@@ -73,4 +73,67 @@ files:
     nodeFilters:
       - 'server:*'
 
+  - description: 'ArgoCD ConfigMap'
+    destination: k3s-manifests-custom/40-argocd-cm.yaml
+    source: resources/configmaps/argocd-cm.yaml
+    nodeFilters:
+      - 'server:*'
+
+  - description: 'ArgoCD HelmChart'
+    destination: k3s-manifests-custom/50-argocd-helmchart.yaml
+    source: resources/helmcharts/argocd-helmchart.yaml
+    nodeFilters:
+      - 'server:*'
+
+  
+  - description: 'Kro HelmChart'
+    destination: k3s-manifests-custom/50-kro-helmchart.yaml
+    source: ./resources/helmcharts/kro.yaml
+    nodeFilters:
+      - 'server:*'
+
+
+  - description: 'Kro Application'
+    destination: k3s-manifests-custom/60-kro-app.yaml
+    source: ./resources/applications/kro-app.yaml
+    nodeFilters:
+      - 'server:*'
+
+  # - description: 'Argofile RGD'
+  #   destination: k3s-manifests-custom/argofile-rgd.yaml
+  #   source: ./resources/rgds/argofile-rgd.yaml
+  #   nodeFilters:
+  #     - 'server:*'
+  - description: 'Argofile RGD Application'
+    destination: k3s-manifests-custom/70-argofile-rgd-app.yaml
+    source: ./resources/applications/argofile/argofile-rgd-application.yaml
+    nodeFilters:
+      - 'server:*'
+
+
+
+  - description: 'Mikrolab Argofile Instance'
+    destination: k3s-manifests-custom/80-mikrolab-argofile.yaml
+    source: ./resources/instances/argofiles/mikrolab-argofile.yaml
+    nodeFilters:
+      - 'server:*'
+
+
+  - description: 'Mikrolab RGD Application'
+    destination: k3s-manifests-custom/mikrolab-rgd-app.yaml
+    source: ./resources/applications/mikrolab-rgd-app.yaml
+    nodeFilters:
+      - 'server:*'
+  
+
+
+    
+  - description: 'Mikrolab Config Instance'
+    destination: k3s-manifests-custom/mikrolab-config.yaml
+    source: ./resources/instances/mikrolab/mikrolab-config.yaml
+    nodeFilters:
+      - 'server:*'
+
+
+
 

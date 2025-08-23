@@ -126,4 +126,6 @@ spec:
 * [ ] CLI tool for managing Mikrolab commands
 * [ ] Additional DNS provider integrations
 * [ ] GitHub Actions
+* [ ] Fix dynamic dns on startup (traefik not up yet)
+* [ ] Create a IngressConfig rgd to standarize how ingressconfigs are set
 

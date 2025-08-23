@@ -50,13 +50,14 @@ services:
     entrypoint: [
       "helmfile", 
       "--log-level", "info",
+      "--include-transitive-needs", 
+      "--wait",
       "--kubeconfig", "/mikrolab/kubeconfig.yaml",
       "-f", "mikrolab/helmfile.yaml",
      ] 
     command: [
-      "--include-transitive-needs", 
-      "--wait",
-      "apply"
+      "apply",
+      # "-l", "group=core"
     ]
     volumes:
       - ./mikrolab/kubeconfig.yaml:/mikrolab/kubeconfig.yaml
