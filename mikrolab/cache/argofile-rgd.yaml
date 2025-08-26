@@ -1,0 +1,203 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: argofile-applicationset-rgd-local
+  labels:
+    app.kubernetes.io/name: mikrolab-applicationset
+    app.kubernetes.io/instance: mikrolab-applicationset
+    app.kubernetes.io/component: applicationset
+    app.kubernetes.io/part-of: mikrolab
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: Argofile
+
+    types:
+      AppType: string | enum="Application,ApplicationSet" default="Application"
+      Parameter:
+        name: string | required=true
+        value: string | required=true
+
+      Application:
+        enabled: boolean | default=false required=true
+
+        name: string | required=true
+        project: string | default="default"
+
+        selfHeal: boolean | default=true
+        syncWave: integer | default=0
+        hook: string | default="Sync"
+
+        sync:
+          createNamespace: boolean | default=true
+          applyOutOfSyncOnly: boolean | default=false
+          replace: boolean | default=false
+          validate: boolean | default=true
+          pruneLast: boolean | default=true
+          respectIgnoreDifferences: boolean | default=true
+          skipDryRunOnMissingResources: boolean | default=false
+          prunePropagationPolicy: string | default="foreground" enum="foreground,background,orphan"
+  
+
+        destination:
+          server: string | default="https://kubernetes.default.svc"
+          namespace: string | default="" required=true
+
+        source:
+          repoURL: string | required=true
+          targetRevision: string | default="main" required=true
+          path: string | default=""
+          chart: string | default=""
+          values: string | default=""
+          # parameters: '[]Parameter'
+
+          # To match multiple patterns, wrap the patterns in {} and separate them with commas. For example: '{*.yml,*.yaml}'
+          directory:
+            recurse: boolean | default=false required=false
+            exclude: string | required=false
+            include: string | required=false
+      
+    # status:
+      # (status.conditions[?type == 'synced']):
+      #   - status: 'True'
+
+    # #   ${self.status.conditions.exists(c, c.type == "Ready" && c.status == "True")}  
+    #   errorsOccured: ${argocdApplicationSet.status.conditions.exists(app, app.type == "ErrorOccurred" && app.status == "True")}
+    #   resourcesUpToDate: ${argocdApplicationSet.status.conditions.exists(app, app.type == "ResourcesUpToDate" && app.status == "True")}
+    #   parametersGenerated: ${argocdApplicationSet.status.conditions.exists(app, app.type == "ParametersGenerated" && app.status == "True")}
+
+      # healthy: ${argocdApplication.status.health.status}
+      # synced: ${argocdApplication.status.sync.status}
+    spec:
+    
+      appType: AppType | default="ApplicationSet" enum="Application,ApplicationSet"
+      applications: '[]Application'
+      # application: Application
+
+      goTemplate: boolean | default=false
+      goTemplateOptions: string | default="missingkey=error"
+
+      syncPolicy:
+        applicationsSync: string | default="create-only" enum="create-only,create-update,create-delete"
+        preserveResourcesOnDelete: boolean | default=false
+
+  resources:
+      - id: createNamespace
+        template:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: '${schema.metadata.name}'
+            labels:
+              app.kubernetes.io/name: '${schema.metadata.name}'
+              app.kubernetes.io/part-of: mikrolab
+
+
+      - id: argocdApplicationSet
+        # includeWhen:
+        #   - '${schema.spec.appType == "ApplicationSet"}'
+        template:
+          apiVersion: argoproj.io/v1alpha1
+          kind: ApplicationSet
+          metadata:
+            name: '${schema.metadata.name}'
+            namespace: argocd
+          spec: 
+
+            goTemplate: true
+            goTemplateOptions: ["${schema.spec.goTemplateOptions}"]
+            generators:
+
+            - list:
+                elements:
+                  ${ schema.spec.applications }
+                  
+
+              selector:
+                matchExpressions:
+                  - key: enabled
+                    operator: In
+                    values:
+                      - "true"
+
+            # syncPolicy:
+            #   applicationsSync: '${schema.spec.syncPolicy.applicationsSync}'
+              # preserveResourcesOnDelete: ${ schema.spec.syncPolicy.preserveResourcesOnDelete } ? why fail you?
+
+            template:
+     
+              metadata:
+                name:                           '{{ .name }}'
+                namespace:                      argocd
+                
+                annotations:
+                  argocd.argoproj.io/sync-wave: '{{ .syncWave }}'
+                  argocd.argoproj.io/hook:      '{{ .hook }}'
+                finalizers:
+                - resources-finalizer.argocd.argoproj.io
+                
+                labels:
+                  # app.kubernetes.io/part-of:  
+
+              spec:
+
+                project:                        '{{ .project }}'
+
+                syncPolicy:
+                  automated:
+                    selfHeal: true
+                    prune: true
+
+                    
+                  syncOptions:
+                    - 'CreateNamespace={{ .sync.createNamespace }}'
+                    - ApplyOutOfSyncOnly={{ .sync.applyOutOfSyncOnly }}
+                    - Replace={{ .sync.replace }}
+                    - Validate={{ .sync.validate }}
+
+                destination:
+                  server:                       '{{ .destination.server }}'
+                  namespace:                    '{{ .destination.namespace | default .name }}'
+
+                source:
+                  repoURL:                    '{{ .source.repoURL }}'
+                  targetRevision:             '{{ .source.targetRevision }}'
+
+
+            templatePatch: | 
+              spec:
+                source:
+
+                {{- if .source.chart }}
+                  chart: {{ .source.chart }}
+                {{- end }}
+
+                {{- if .source.path }}
+                  path:  {{ .source.path }}
+                {{- end }}
+
+                {{- if .source.values }}
+                  helm:
+                    values: {{ .source.values | quote | nindent 12  }}
+                {{- end }}
+
+                {{- if .source.directory.recurse }}
+                  directory:
+                    recurse: {{ .source.directory.recurse }}
+
+                    {{- if hasKey .source.directory "include"}}
+                      {{- if .source.directory.include  }}
+                    include: {{ .source.directory.include | quote | nindent 12}}
+                      {{- end }}
+                    {{- end }}
+
+                    {{- if hasKey .source.directory "exclude"}}
+                      {{- if .source.directory.exclude  }}
+                    exclude: {{ .source.directory.exclude | quote | nindent 12}}
+                      {{- end }}
+                    {{- end}}
+                {{- end }}
+
+
+
+

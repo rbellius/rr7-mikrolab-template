@@ -23,7 +23,9 @@ spec:
     configs:
       params:
         server.insecure: true
+      cm:
         create: false
+        # create:
       # cm:
       #   timeout.reconciliation: 15s
       #   application.resourceTrackingMethod: "annotation+label"

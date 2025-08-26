@@ -53,87 +53,106 @@ registries:
       - /var/run/docker.sock:/var/run/docker.sock
 
 
-
 files:
-  - description: 'rbel-repo'
+
+  ## Secrets
+  - description: 'ArgoCD Repositories Secrets'
     destination: k3s-manifests-custom/rbel-repo.yaml
-    source: .secrets/rebl-repo.yaml
+    source: .secrets/argocd-repositories.yaml
     nodeFilters:
       - 'server:*'
 
-  - description: 'ducksdns-secret'
-    destination: k3s-manifests-custom/duckdns-secret.yaml
-    source: .secrets/duckdns-secret.yaml
+  - description: 'Cert Manager DNS Provider Secrets'
+    destination: k3s-manifests-custom/cm-dns-secrets.yaml
+    source: .secrets/cm-dns-secrets.yaml
     nodeFilters:
       - 'server:*'
 
-  - description: 'cloudflare-secret'
-    destination: k3s-manifests-custom/cloudflare-secret.yaml
-    source: .secrets/cloudflare-secret.yaml
-    nodeFilters:
-      - 'server:*'
 
+
+  ## ConfigMaps
   - description: 'ArgoCD ConfigMap'
     destination: k3s-manifests-custom/40-argocd-cm.yaml
     source: resources/configmaps/argocd-cm.yaml
     nodeFilters:
       - 'server:*'
 
+
+    ## Mikrolab Requirements
   - description: 'ArgoCD HelmChart'
-    destination: k3s-manifests-custom/50-argocd-helmchart.yaml
+    destination: k3s-manifests-custom/45-argocd-helmchart.yaml
     source: resources/helmcharts/argocd-helmchart.yaml
     nodeFilters:
       - 'server:*'
-
   
   - description: 'Kro HelmChart'
     destination: k3s-manifests-custom/50-kro-helmchart.yaml
-    source: ./resources/helmcharts/kro.yaml
+    source: ./resources/helmcharts/kro-helmchart.yaml
     nodeFilters:
       - 'server:*'
 
-
-  - description: 'Kro Application'
-    destination: k3s-manifests-custom/60-kro-app.yaml
-    source: ./resources/applications/kro-app.yaml
-    nodeFilters:
+  - description: 'Argofile RGD Application'
+    destination: k3s-manifests-custom/55-argofile-rgd-app.yaml
+    source: ./resources/applications/argofile-rgd.yaml
+    nodeFilters:  
       - 'server:*'
 
-  # - description: 'Argofile RGD'
-  #   destination: k3s-manifests-custom/argofile-rgd.yaml
+
+  # - description: 'Local Argofile RGD'
+  #   destination: k3s-manifests-custom/60-argofile-rgd.yaml
   #   source: ./resources/rgds/argofile-rgd.yaml
   #   nodeFilters:
   #     - 'server:*'
-  - description: 'Argofile RGD Application'
-    destination: k3s-manifests-custom/70-argofile-rgd-app.yaml
-    source: ./resources/applications/argofile/argofile-rgd-application.yaml
+
+
+
+  ## Mikrolab Dependencies
+  - description: 'Local-ish Mikrolab Dependencies'
+    destination: k3s-manifests-custom/60-mikrolab-argofile.yaml
+    source: ./resources/instances/mikrolab-deps.yaml
+    nodeFilters:
+      - 'server:*'
+
+  ## Mikrolab Config (Instance)
+  - description: 'Local Mikrolab Config Instance'
+    destination: k3s-manifests-custom/65-mikrolab-config.yaml
+    source: ./resources/instances/mikrolab-config.yaml
+    nodeFilters:
+      - 'server:*'
+
+
+  ## WebApp Instances
+  - description: 'Local WebApp Instances'
+    destination: k3s-manifests-custom/100-webapp-instances.yaml
+    source: ./resources/instances/webapp.yaml
     nodeFilters:
       - 'server:*'
 
 
 
-  - description: 'Mikrolab Argofile Instance'
-    destination: k3s-manifests-custom/80-mikrolab-argofile.yaml
-    source: ./resources/instances/argofiles/mikrolab-argofile.yaml
-    nodeFilters:
-      - 'server:*'
 
+  # - description: 'Kro Application'
+  #   destination: k3s-manifests-custom/60-kro-app.yaml
+  #   source: ./resources/applications/kro-app.yaml
+  #   nodeFilters:
+  #     - 'server:*'
 
-  - description: 'Mikrolab RGD Application'
-    destination: k3s-manifests-custom/mikrolab-rgd-app.yaml
-    source: ./resources/applications/mikrolab-rgd-app.yaml
-    nodeFilters:
-      - 'server:*'
+  # - description: 'Mikrolab Local RGD DEV'
+  #   destination: k3s-manifests-custom/60-mikrolab-rgd.yaml
+  #   source: ./resources/rgds/mikrolab-rgd/definition.yaml
+  #   nodeFilters:
+  #     - 'server:*'
+
+  # - description: 'Mikrolab RGD Application'
+  #   destination: k3s-manifests-custom/mikrolab-rgd-app.yaml
+  #   source: ./resources/applications/mikrolab-rgd-app.yaml
+  #   nodeFilters:
+  #     - 'server:*'
   
 
-
-    
-  - description: 'Mikrolab Config Instance'
-    destination: k3s-manifests-custom/mikrolab-config.yaml
-    source: ./resources/instances/mikrolab/mikrolab-config.yaml
-    nodeFilters:
-      - 'server:*'
-
-
-
+  # - description: 'Local WebApp RGD'
+  #   destination: k3s-manifests-custom/80-webapp-rgd.yaml
+  #   source: ./resources/rgds/webapp-rgd.yaml
+  #   nodeFilters:
+  #     - 'server:*'
 

@@ -1,0 +1,17 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+
+metadata:
+  name: kro
+  namespace: kube-system
+
+spec:
+  bootstrap: true
+  chart: oci://ghcr.io/kro-run/kro/kro
+  targetNamespace: kro
+  createNamespace: true
+  version: 0.4.0
+  valuesContent: |-
+    crds:
+      create: true
+      keep: true

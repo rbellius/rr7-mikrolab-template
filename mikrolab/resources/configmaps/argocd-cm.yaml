@@ -3,16 +3,15 @@ kind: ConfigMap
 metadata:
   name: argocd-cm
   namespace: argocd
-  annotations:
-    meta.helm.sh/release-name: argocd
-    meta.helm.sh/release-namespace: argocd
-
   labels:
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
 data:
   timeout.reconciliation: 15s
   application.resourceTrackingMethod: "annotation+label"
   applicationsetcontroller.enable.new.git.file.globbing: "true"
+  resource.ignoreResourceUpdatesEnabled: 'false'
   resource.customizations.health.argoproj.io_Application: |
     hs = {}
     hs.status = "Progressing"

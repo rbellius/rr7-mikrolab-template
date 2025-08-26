@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argofile-rgd-application
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+    argocd.argoproj.io/hook: PreSync
+
+    
+  finalizers:
+    # The default behaviour is foreground cascading deletion
+    # - resources-finalizer.argocd.argoproj.io
+    # Alternatively, you can use background cascading deletion
+    - resources-finalizer.argocd.argoproj.io/background
+
+spec:
+  project: default
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+      allowEmpty: true
+  
+    syncOptions:
+      - CreateNamespace=true
+      - Replace=true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform
+
+  source:
+    repoURL: git@github.com:rbellius/resourcegraphdefinitions.git
+    path: rgds/argofile
+    targetRevision: main
+

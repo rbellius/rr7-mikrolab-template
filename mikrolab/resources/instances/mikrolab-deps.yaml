@@ -1,0 +1,185 @@
+apiVersion: kro.run/v1alpha1
+kind: Argofile
+metadata:
+  name: mikrolab-argofile-local
+  namespace: argocd
+
+spec:
+  appType: ApplicationSet
+  applications: 
+
+      ## This is optional. 
+      ## Normally argo-cd is already installed by a volumn mounted "k3s HelmChart" 
+      ## Enable this to allow argo-cd to take over from helm and manage itself
+    - name: argocd
+      enabled: false
+      hook: PreSync
+      sync:
+        createNamespace: true
+      destination:
+        namespace: argocd
+      source:
+        repoURL: https://argoproj.github.io/argo-helm
+        targetRevision: 8.3.0
+        chart: argo-cd
+        values: |
+          crds:
+            create: true
+            keep: true
+        
+          dex:
+            enabled: false
+
+          configs:
+            params:
+              server.insecure: true
+            cm:
+              create: false
+
+
+    ## This is optional.
+    ## Normally Kro is already installed by a volumn mounted "k3s HelmChart"
+    ## Enable this to allow argo-cd to take over from helm Kro
+    - name: kro
+      enabled: false
+      hook: PreSync
+      sync:
+        createNamespace: true
+      destination:
+        namespace: kro
+      source:
+
+        # This fork is to avoid an export variable required in the original.
+        # I could perhaps solve this by passing some environment variable
+        repoURL: git@github.com:rbellius/kro.git
+        targetRevision: main
+        path: helm
+        values: |
+          crds:
+            create: true
+            keep: true
+
+
+    ## Enable this to load the library of MikroLab ResourceGraphDefinitions (RGDs)
+    - name: mirkolab-rgds
+      enabled: true
+      hook: PreSync
+      sync:
+        createNamespace: true
+      destination:
+        namespace: mikrolab
+      source:
+        repoURL: git@github.com:rbellius/resourcegraphdefinitions.git
+        targetRevision: main
+        path: rgds
+        directory:
+          recurse: true
+
+          ## the \ is to break the single line string into multiple lines
+          ## Individual RGDs can be enabled/disabled by adding to removing lines below
+          include: "{\
+              ingress-request/*\
+              ,cert-manager-config/*\
+              ,mikrolab/*\
+              ,webapp/*\
+            }"
+      
+
+
+
+    # - name: ingress-requrest-rgd-loader
+    #   enabled: false
+    #   hook: PreSync
+    #   sync:
+    #     createNamespace: true
+    #   destination:
+    #     namespace: cert-manager
+    #   source:
+    #     repoURL: git@github.com:rbellius/resourcegraphdefinitions.git
+    #     targetRevision: main
+    #     path: rgds
+    #     directory:
+    #       recurse: true
+
+    #       ## the \ is to break the single line string into multiple lines
+    #       include: "{\
+    #           ingress-request-rgd/*\
+    #           ,cert-manager-bundle-rgd/*\
+    #         }"
+
+    # - name: cert-manager-bundle
+    #   enabled: false 
+    #   hook: PreSync
+    #   sync:
+    #     createNamespace: true
+    #   destination:
+    #     namespace: cert-manager
+    #   source:
+    #     repoURL: git@github.com:rbellius/resourcegraphdefinitions.git
+    #     targetRevision: main
+    #     path: rgds/cert-manager-bundle-rgd
+
+    # - name: mirkolab-rgd-loader
+    #   enabled: true 
+    #   destination:
+    #     namespace: platform
+    #   source:
+    #     repoURL: git@github.com:rbellius/resourcegraphdefinitions.git
+    #     targetRevision: main
+    #     path: rgds/mikrolab-rgd
+
+    # # - name: arkrocd-bundle-loader
+    # #   enabled: true 
+    # #   hook: PreSync
+    # #   destination:
+    # #     namespace: argocd
+    # #   source:
+    # #     repoURL: git@github.com:rbellius/resourcegraphdefinitions.git
+    # #     targetRevision: main
+    # #     path: rgds/arkrocd-bundle
+
+
+              # # remote 
+          # - enabled: false
+          #   name: remote
+          #   namespace: remote
+          #   repoURL: git@github.com:rbellius/charts.git
+          #   targetRevision: main
+          #   path: experimental/local-app
+          #   # syncWave: 10
+          #   # hook: PostSync
+          #   values:
+          #     name: remote
+          #     namespace: remote   
+
+          #     dns:
+          #       subdomain: remote
+
+          #     env: staging
+
+          # # k8s-gateway
+          # - enabled: false
+          #   name: k8s-gateway
+          #   namespace: k8s-gateway
+          #   repoURL: https://ori-edge.github.io/k8s_gateway/
+          #   chart: k8s-gateway
+          #   targetRevision: 2.4.0
+          #   # hook: PreSync
+          #   # syncWave: -5
+          #   values:
+          #     domain: mikrolab.duckdns.org
+          #     apex: mikrolab.duckdns.org
+
+          #     watchedResources: ["Ingress"]
+
+          #     service:
+          #       type: LoadBalancer
+          #       # loadBalancerIP: 192.168.1.11
+          #       externalTrafficPolicy: Local 
+
+          #     fallthrough:
+          #       enabled: true
+
+          #     debug:
+          #       enabled: true 
+          #       logLevel: debug   
