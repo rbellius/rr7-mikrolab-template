@@ -6,6 +6,8 @@
 /build/
 
 # Mikrolab
-**/.secrets/
-**/kubeconfig.yaml
+mikrolab/.secrets/
+mikrolab/.cache/
+mikrolab/kubeconfig.yaml
+
 

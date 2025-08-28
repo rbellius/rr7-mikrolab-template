@@ -5,14 +5,14 @@ metadata:
   namespace: argocd
 
 spec:
-  appType: ApplicationSet
+
   applications: 
 
       ## This is optional. 
       ## Normally argo-cd is already installed by a volumn mounted "k3s HelmChart" 
       ## Enable this to allow argo-cd to take over from helm and manage itself
     - name: argocd
-      enabled: false
+      enabled: true
       hook: PreSync
       sync:
         createNamespace: true
@@ -24,8 +24,8 @@ spec:
         chart: argo-cd
         values: |
           crds:
-            create: true
-            keep: true
+            create: false
+            
         
           dex:
             enabled: false
@@ -41,7 +41,7 @@ spec:
     ## Normally Kro is already installed by a volumn mounted "k3s HelmChart"
     ## Enable this to allow argo-cd to take over from helm Kro
     - name: kro
-      enabled: false
+      enabled: true
       hook: PreSync
       sync:
         createNamespace: true
@@ -49,15 +49,14 @@ spec:
         namespace: kro
       source:
 
-        # This fork is to avoid an export variable required in the original.
+        # This fork of kro is to avoid an export variable required in the original.
         # I could perhaps solve this by passing some environment variable
         repoURL: git@github.com:rbellius/kro.git
         targetRevision: main
         path: helm
         values: |
           crds:
-            create: true
-            keep: true
+            create: false
 
 
     ## Enable this to load the library of MikroLab ResourceGraphDefinitions (RGDs)

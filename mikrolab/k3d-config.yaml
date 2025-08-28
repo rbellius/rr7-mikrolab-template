@@ -91,7 +91,7 @@ files:
     nodeFilters:
       - 'server:*'
 
-  - description: 'Argofile RGD Application'
+  - description: 'Application for Argofile RGD'
     destination: k3s-manifests-custom/55-argofile-rgd-app.yaml
     source: ./resources/applications/argofile-rgd.yaml
     nodeFilters:  
@@ -100,16 +100,21 @@ files:
 
   # - description: 'Local Argofile RGD'
   #   destination: k3s-manifests-custom/60-argofile-rgd.yaml
-  #   source: ./resources/rgds/argofile-rgd.yaml
+  #   source: ./resources/rgds/argofile/argofile-rgd.yaml
+  #   nodeFilters:
+  #     - 'server:*'
+
+  # - description: 'Local IngressRequest RGD'
+  #   destination: k3s-manifests-custom/60-ingress-request-rgd.yaml
+  #   source: ./resources/rgds/ingress-request/ingress-request-definition.yaml
   #   nodeFilters:
   #     - 'server:*'
 
 
-
   ## Mikrolab Dependencies
-  - description: 'Local-ish Mikrolab Dependencies'
+  - description: 'Local-ish Argofile Instance for Mikrolab Dependencies'
     destination: k3s-manifests-custom/60-mikrolab-argofile.yaml
-    source: ./resources/instances/mikrolab-deps.yaml
+    source: ./resources/instances/mikrolab-deps-argofile.yaml
     nodeFilters:
       - 'server:*'
 
@@ -127,6 +132,8 @@ files:
     source: ./resources/instances/webapp.yaml
     nodeFilters:
       - 'server:*'
+
+
 
 
 

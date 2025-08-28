@@ -1,52 +1,41 @@
-#  gum spin --spinner dot --title "Waiting for CRD arogfiles.kro.run to be created" -- time kubectl wait --for=create crds argofiles.kro.run --timeout=-1s; 
-#  gum style --foreground 2 --bold "CRD argofiles.kro.run created successfully";
+# kubectl wait --for=condition=Established --timeout=-1s crds applications.argoproj.io
+trap 'echo "Caught Ctrl+C. Exiting gracefully."; exit 1' SIGINT
 
-
-# all passed params
 readyIcon=$(echo -e "\e[0;32m\u2714\e[0m")
+waitingIcon=$(echo -e "\e[1;33m\u23F3\e[0m")
 
 
+function kwaitCrd {
+    local crd=$1
 
-function kwaiting {
-    local kind=$1
-    local desiredCount=$(kubectl get --kubeconfig mikrolab/kubeconfig.yaml $kind -A -o=jsonpath='{.items[*].kind}' | wc -w)
+    gum spin --spinner minidot --spinner.foreground=46 --title  " [ ${crd} ] - Creating... " -- kubectl wait --for=create crds $crd --timeout=-1s
+    gum spin --spinner dot --spinner.foreground=82 --title " [ ${crd} ] - Progressing..." -- kubectl wait --for=condition=Established crds $crd --timeout=-1s; 
 
-    gum spin --spinner moon --title "Waiting for $kind to be ready" -- kubectl wait --for=condition=Established --timeout=-1s crds $kind;
-
-    local results=$(kubectl get --kubeconfig mikrolab/kubeconfig.yaml $kind -A -o=jsonpath='{.items[*].kind}' | wc -w)
-
-    if [[ "$results" -ge "$desiredCount" ]]; then
-        gum style --foreground 2 --bold "${readyIcon} $kind is ready with ${results} of desired ${desiredCount}";
-    else
-        gum style --foreground 1 --bold "Failed to get $kind ready. Found ${results} of desired ${desiredCount}";
-    fi
+    gum style \
+        --margin "0 2" \
+        --bold \
+        -- \
+        "${readyIcon} ${crd} - Established";
+    
 }
 
-function kwait {
-    kind=$1
 
-    gum spin --spinner moon -- kubectl wait --for=condition=Established --timeout=-1s crds $kind ;
-    gum style --foreground 2 --bold "${readyIcon} $kind is established";
-}
 
-# for kind in "$@"; do
-#     kwait $kind #&
+echo -e ":building_construction: &nbsp; Checking CRDs &nbsp; :package:" | gum format -t emoji |  gum style \
+        --foreground 214 --border-foreground 214 --border none \
+        --align center  --width 25 --margin "0 0" --padding "1 0"  --bold 
+
+
+crdList="helmcharts.helm.cattle.io resourcegraphdefinitions.kro.run applications.argoproj.io applicationsets.argoproj.io argofiles.kro.run mikrolabs.kro.run ingressrequests.kro.run certmanagerbundles.kro.run certificaterequests.cert-manager.io certificates.cert-manager.io"
+
+for crd in $crdList; do
+    kwaitCrd "$crd"
+done
+
+
+
+# for crd in $(kubectl get crds -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | sort); do
+#     if [[ "$crd" != "helmcharts.helm.cattle.io" && "$crd" != "resourcegraphdefinitions.kro.run" && "$crd" != "applications.argoproj.io" && "$crd" != "applicationsets.argoproj.io" && "$crd" != "argofiles.kro.run" && "$crd" != "mikrolabs.kro.run" && "$crd" != "ingressrequests.kro.run" && "$crd" != "certmanagerbundles.kro.run" && "$crd" != "certificaterequests.cert-manager.io" && "$crd" != "certificates.cert-manager.io" ]]; then
+#         kwaitCrdShort "$crd"
+#     fi
 # done
-
-echo "Waiting for CRDs to be established..."
-gum spin --spinner moon -- kubectl wait --for=condition=Established --timeout=-1s crds applications.argoproj.io
-gum style --foreground 2 --bold "${readyIcon} Applications is established";
-
-
-gum spin --spinner moon -- kubectl wait --for=condition=Established --timeout=-1s crds applicationssets.argoproj.io
-gum style --foreground 2 --bold "${readyIcon} ApplicationSets is established";
-
-
-gum spin --spinner moon -- kubectl wait --for=condition=Established --timeout=-1s crds resourcegraphdefinitions.argoproj.io
-gum style --foreground 2 --bold "${readyIcon} ResourceGraphDefinition is established";
-
-gum spin --spinner moon -- kubectl wait --for=condition=Established --timeout=-1s crds argofiles.kro.run
-gum style --foreground 2 --bold "${readyIcon} ArgoFiles is established";
-
-gum spin --spinner moon -- kubectl wait --for=condition=Established --timeout=-1s crds mikrolabfiles.kro.run
-gum style --foreground 2 --bold "${readyIcon} MikrolabFiles is established";
